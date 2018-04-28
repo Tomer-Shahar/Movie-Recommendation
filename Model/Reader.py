@@ -1,13 +1,16 @@
-import json
 import os
+import pickle
 
 
 def load_recommender(folder_path):
-    table = None
-    path = folder_path + '\\Recommender.json'
+
+    path = folder_path + '\\Recommender.pkl'
 
     if os.path.exists(path):
-        with open(path, 'r') as fp:
-            table = json.load(fp)
+        with open(path, 'rb') as fp:
+            table = pickle.load(fp)
+            print("managed to unpickle")
+            return table
 
-    return table
+    else:
+        return None

@@ -17,10 +17,12 @@ class Controller:
 
     def start(self):
         print("Open GUI and do stuff \n")
-        self.parser = Parse('C:\\Users\\Tomer\\PycharmProjects\\movie-recommendation\\Database\\100k-small')
-        self.create_table()
-        self.write_recommender()
-        #self.load_table()
+        #self.parser = Parse('C:\\Users\\Tomer\\PycharmProjects\\movie-recommendation\\Database\\100k-small')
+        #self.create_table()
+        #self.write_recommender()
+        self.parser = None
+        self.load_table()
+        print("finished unpickling")
 
     def create_table(self):
         self.parser.parse_movieDB_files()
@@ -28,13 +30,12 @@ class Controller:
     def write_recommender(self):
         cwd = os.getcwd()  # current working directory
         resource_folder = cwd + '\\Resources'
-        Writer.write_pearson_table(self.pearsonTable, resource_folder)
+        Writer.write_recommender(self.parser, resource_folder)
 
     def load_table(self):
         cwd = os.getcwd()  # current working directory
         resource_folder = cwd + '\\Resources'
-        self.parser = Reader.load_recommender()
-        self.pearsonTable = Reader.load_recommender(resource_folder)
+        self.parser = Reader.load_recommender(resource_folder)
 
     def get_recommendations(self, userName, movieName):
         pass

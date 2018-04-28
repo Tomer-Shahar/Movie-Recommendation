@@ -6,16 +6,23 @@ This class parses the movie rating file and creates a huge array containing the 
 import csv
 import math
 
-
 # noinspection PyPep8Naming
 class Parse:
 
-    def __init__(self, path=''):
-        self.filePath = path
-        self.PearsonScoreDictionary = {}  # A dictionary mapping pearson correlation between users.
-        self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
-        self.users = {}  # A dictionary mapping user IDs to their average/ratings
-        self.movieNames = {}  # A dictionary that maps movie titles to their numbers
+    def __init__(self, path: str, parserdict: dict = None):
+
+        if parserdict is None:
+            self.filePath = path
+            self.PearsonScoreDictionary = {}  # A dictionary mapping pearson correlation between users.
+            self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
+            self.users = {}  # A dictionary mapping user IDs to their average/ratings
+            self.movieNames = {}  # A dictionary that maps movie titles to their numbers
+        else:
+            self.filePath = parserdict['filePath']
+            self.PearsonScoreDictionary = parserdict['pearsonTable']
+            self.movies = parserdict['movies']
+            self.users = parserdict['users']
+            self.movieNames = parserdict['movieNames']
 
     def parse_movieDB_files(self):
 
@@ -45,7 +52,7 @@ class Parse:
         if movieName.lower() not in self.movieNames:
             print("The movie is not in the database")
             return
-        
+
         movieID = self.movieNames[movieName.lower()]
         r_a = user.averageUserRating
         numerator = 0
@@ -93,6 +100,9 @@ class Parse:
         for userEntry in self.users:
             self.users[userEntry].calculate_average()
 
+        for movieId, movie in self.movies.items():
+            movie.calculate_average_rating()
+
     def __populateNeighbors(self):
 
         for movieID, movie in self.movies.items():  # iterate over all the movies
@@ -139,15 +149,26 @@ class Parse:
     # create a dictionary mapping movie IDs to their names
     def __mapMovieNames(self):
         moviesPath = self.filePath + '\\movies.csv'
-        with open(moviesPath, newline='') as csvFile:
+        with open(moviesPath, encoding="utf8") as csvFile:
             movie_reader = csv.DictReader(csvFile)
             for row in movie_reader:
-                title = row['title'].split('(')[0].strip()
-                movieId = int(row['movieId'])
-                self.movies[movieId].name = title # Keep original name
+                title = row['title']
+                movieID = int(row['movieId'])
+                if(movieID not in self.movies):
+                    self.movies[movieID] = Movie(movieID)
+                self.movies[movieID].name = title  # Keep original name
                 title = title.lower()
-                self.movieNames[title] = movieId # make it lower-case for search purposes
+                self.movieNames[title] = movieID  # make it lower-case for search purposes
 
+    def toDict(self):
+        parser_to_dict = {}
+        parser_to_dict['filePath'] = self.filePath
+        parser_to_dict['pearsonTable'] = self.PearsonScoreDictionary
+        parser_to_dict['movies'] = self.movies
+        parser_to_dict['users'] = self.users
+        parser_to_dict['movieNames'] = self.movieNames
+
+        return parser_to_dict
 
 class User:
 
@@ -182,5 +203,5 @@ class Movie:
         for user, rating in self.ratings.items():
             rating_sum += rating
             num += 1
-
-        self.averageRating = rating_sum / num
+        if(num != 0):
+            self.averageRating = rating_sum / num
