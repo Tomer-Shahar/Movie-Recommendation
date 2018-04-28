@@ -17,7 +17,7 @@ class Parse:
         self.users = {}  # A dictionary mapping user IDs to their average/ratings
         self.movieNames = {}  # A dictionary that maps movie titles to their numbers
 
-    def create_pearson_table(self):
+    def parse_movieDB_files(self):
 
         self.__create_dictionaries()
         self.__mapMovieNames()
@@ -30,11 +30,40 @@ class Parse:
                 self.PearsonScoreDictionary[user_a_id][user_w] = score
                 self.PearsonScoreDictionary[user_w][user_a_id] = score
 
+    def get_pearson_table(self):
         return self.PearsonScoreDictionary
 
-    def compute_predictions(self, movieName):
+    def get_movie_id(self, movie_title):
+        return self.movieNames[movie_title]
+
+    def get_movie_name(self, movieID):
+        return self.movies[movieID].name
+
+    # receives a user ID and a movie Id and returns the predicted rating of the given user for the movie.
+    def compute_prediction_for_movie(self, userId, movieName):
+        user = self.users[userId]
+        if movieName.lower() not in self.movieNames:
+            print("The movie is not in the database")
+            return
         
-        pass
+        movieID = self.movieNames[movieName.lower()]
+        r_a = user.averageUserRating
+        numerator = 0
+        denominator = 0
+
+        for neighbor in user.neighbors:  # iterate over neighbors and their ratings for movie i
+            neighbor = self.users[neighbor]
+            if movieID in neighbor.movies:
+                neighbor_score = neighbor.movies[movieID] - neighbor.averageUserRating
+                pearson_score = self.PearsonScoreDictionary[user][neighbor.ID]
+                product = neighbor_score * pearson_score
+                numerator += product
+                denominator += pearson_score
+
+        if denominator == 0:  # in case the denominator happens to be 0, return the average rating.
+            return r_a
+        else:
+            return r_a + (numerator / denominator)
 
     # A method that populates the movieRatingsPerUser and users dictionary
     def __create_dictionaries(self):
@@ -112,10 +141,12 @@ class Parse:
         moviesPath = self.filePath + '\\movies.csv'
         with open(moviesPath, newline='') as csvFile:
             movie_reader = csv.DictReader(csvFile)
-
             for row in movie_reader:
-                self.movies[row['movieId']].name = row['title']
-                self.movieNames[row['title']] = row['movieId']
+                title = row['title'].split('(')[0].strip()
+                movieId = int(row['movieId'])
+                self.movies[movieId].name = title # Keep original name
+                title = title.lower()
+                self.movieNames[title] = movieId # make it lower-case for search purposes
 
 
 class User:

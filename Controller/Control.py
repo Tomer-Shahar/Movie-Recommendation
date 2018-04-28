@@ -18,12 +18,12 @@ class Controller:
     def start(self):
         print("Open GUI and do stuff \n")
         self.parser = Parse('C:\\Users\\Tomer\\PycharmProjects\\movie-recommendation\\Database\\100k-small')
-        #self.create_table()
-        #self.write_recommender()
-        self.load_table()
+        self.create_table()
+        self.write_recommender()
+        #self.load_table()
 
     def create_table(self):
-        self.pearsonTable = self.parser.create_pearson_table()
+        self.parser.parse_movieDB_files()
 
     def write_recommender(self):
         cwd = os.getcwd()  # current working directory
@@ -36,8 +36,8 @@ class Controller:
         self.parser = Reader.load_recommender()
         self.pearsonTable = Reader.load_recommender(resource_folder)
 
-    def get_recommendations(self):
-
+    def get_recommendations(self, userName, movieName):
+        pass
 
     def add_user(self):
         pass
