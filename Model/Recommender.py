@@ -6,6 +6,7 @@ This class parses the movie rating file and creates a huge array containing the 
 import csv
 import math
 
+
 # noinspection PyPep8Naming
 class Parse:
 
@@ -31,11 +32,29 @@ class Parse:
         self.__calculateAverages()
         self.__populateNeighbors()
 
-        for user_a_id, user_a in self.users.items():
+        top = 30
+        for user_a_id, user_a in self.users.items():         # Creating the actual pearson table
+            top_neighbors = []  # A list of tuples containing the 30 closest neighbors < userId , correlation >
             for user_w in user_a.neighbors:
                 score = self.__calculate_score(user_a, self.users[user_w])
-                self.PearsonScoreDictionary[user_a_id][user_w] = score
-                self.PearsonScoreDictionary[user_w][user_a_id] = score
+                if score < 0:
+                    continue
+                if len(top_neighbors) < top:  # If there aren't X movies yet in the list, append it anyway
+                    user_correlation = (user_w, score)
+                    top_neighbors.append(user_correlation)
+                    top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
+                elif score > top_neighbors[-1][0]:  # the score is greater than at least the last user in the list.
+                    user_correlation = (user_w, score)
+                    top_neighbors.append(user_correlation)
+                    top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
+                    del top_neighbors[-1]
+
+            close_neighbors = set()
+            for entry in top_neighbors:
+                self.PearsonScoreDictionary[user_a_id][entry[0]] = entry[1]
+                close_neighbors.add(entry[0])
+
+            user_a.neighbors = user_a.neighbors.intersection(close_neighbors)
 
     def get_pearson_table(self):
         return self.PearsonScoreDictionary
@@ -44,12 +63,14 @@ class Parse:
         return self.movieNames[movie_title]
 
     def get_movie_name(self, movieID):
-        return self.movies[movieID].name
+        return self.movies[movieID].title
 
-    # receives a user ID and a movie Id and returns the predicted rating of the given user for the movie.
-    def compute_prediction_for_movie(self, userId, movieName):
+    # receives a user ID and a movie name and returns the predicted rating of the given user for the movie.
+    # the movie name can be upper/lower case.
+    def compute_prediction_for_movie(self, userId: int, movieName: str):
         user = self.users[userId]
-        if movieName.lower() not in self.movieNames:
+        title = movieName.lower()
+        if title not in self.movieNames:
             print("The movie is not in the database")
             return
 
@@ -61,16 +82,56 @@ class Parse:
         for neighbor in user.neighbors:  # iterate over neighbors and their ratings for movie i
             neighbor = self.users[neighbor]
             if movieID in neighbor.movies:
-                neighbor_score = neighbor.movies[movieID] - neighbor.averageUserRating
-                pearson_score = self.PearsonScoreDictionary[user][neighbor.ID]
-                product = neighbor_score * pearson_score
-                numerator += product
-                denominator += pearson_score
+                try:
+                    neighbor_score = neighbor.movies[movieID] - neighbor.averageUserRating
+                    pearson_score = self.PearsonScoreDictionary[user.ID][neighbor.ID]
+                    product = neighbor_score * pearson_score
+                    numerator += product
+                    denominator += pearson_score
+                except KeyError:
+                    print("here")
 
         if denominator == 0:  # in case the denominator happens to be 0, return the average rating.
             return r_a
         else:
             return r_a + (numerator / denominator)
+
+    # Returns a DESCENDING sorted list of tuples containing the predicted score and the corresponding Movie objects.
+    def get_top_x_movies_for_user(self, userId: int, top_x: int):
+        top_x_list = []  # A sorted list of tuples - < predicted score, movie object >
+        for movieId, movie in self.movies.items():
+            if userId in movie.ratings:
+                continue
+            title = movie.title
+            if '"' in title:
+                #title = title[1:-1]
+                continue
+            else:
+                title = title.split('(')[0].strip().lower()
+            score = self.compute_prediction_for_movie(userId, title)
+            try:
+                if score is not None:
+                    if len(top_x_list) < top_x:  # If there aren't X movies yet in the list, append it anyway
+                        entry = (score, movie)
+                        top_x_list.append(entry)
+                        top_x_list.sort(key=lambda x: x[0], reverse=True)
+                    elif score > top_x_list[-1][0]:  # the score is greater than at least the last element in the list.
+                        entry = (score, movie)
+                        top_x_list.append(entry)
+                        top_x_list.sort(key=lambda x: x[0], reverse=True)
+                        del top_x_list[-1]
+            except TypeError:
+                print(movie.title)
+
+        return top_x_list
+
+    @staticmethod
+    def get_rating(pair):
+        return pair[0]
+
+    # Retrieves titles and ratings of top X movies
+    def get_top_rated_movies(self, top_x):
+        pass
 
     # A method that populates the movieRatingsPerUser and users dictionary
     def __create_dictionaries(self):
@@ -154,10 +215,10 @@ class Parse:
             for row in movie_reader:
                 title = row['title']
                 movieID = int(row['movieId'])
-                if(movieID not in self.movies):
+                if (movieID not in self.movies):
                     self.movies[movieID] = Movie(movieID)
-                self.movies[movieID].name = title  # Keep original name
-                title = title.lower()
+                self.movies[movieID].title = title  # Keep original name
+                title = title.split('(')[0].strip().lower()
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
 
     def toDict(self):
@@ -170,12 +231,13 @@ class Parse:
 
         return parser_to_dict
 
+
 class User:
 
     def __init__(self, Id):
         self.ID = Id
         self.movies = {}  # A dictionary of movies seen by the user and their ratings.
-        self.neighbors = set()  # A dictionary containing a user and a set of neighbours
+        self.neighbors = set()  # A dictionary containing a user and a set of neighbours (BY ID!!!)
         self.averageUserRating = -1  # The users average rating.
 
     def calculate_average(self):
@@ -192,8 +254,8 @@ class Movie:
 
     def __init__(self, number):
         self.serialNum = number  # movie's serial number
-        self.name = ''
-        self.ratings = {}  # A dictionary mapping user to rating (for this movie)
+        self.title = ''
+        self.ratings = {}  # A dictionary mapping user to rating (for this movie) < userID : Rating >
         self.averageRating = -1
         self.genres = []
 
@@ -203,5 +265,5 @@ class Movie:
         for user, rating in self.ratings.items():
             rating_sum += rating
             num += 1
-        if(num != 0):
+        if (num != 0):
             self.averageRating = rating_sum / num

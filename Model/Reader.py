@@ -9,7 +9,6 @@ def load_recommender(folder_path):
     if os.path.exists(path):
         with open(path, 'rb') as fp:
             table = pickle.load(fp)
-            print("managed to unpickle")
             return table
 
     else:

@@ -11,4 +11,3 @@ def write_recommender(parser, folder_name):
     with open(savePath, 'wb') as fp:
         #    json.dump(parser.toDict(), fp, sort_keys=True, indent=4, ensure_ascii=False)
         pickle.dump(parser, fp)
-        print("Managed to pickle")
