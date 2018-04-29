@@ -8,6 +8,7 @@ from Model import Writer
 from Model import Reader
 import os
 
+
 class Controller:
 
     def __init__(self):
@@ -29,6 +30,7 @@ class Controller:
 
         for entry in top_movies:
             print(entry[0], " : ", entry[1].title)
+
     def create_table(self):
         self.parser.parse_movieDB_files()
 

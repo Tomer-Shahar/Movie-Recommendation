@@ -10,6 +10,5 @@ def load_recommender(folder_path):
         with open(path, 'rb') as fp:
             table = pickle.load(fp)
             return table
-
     else:
         return None

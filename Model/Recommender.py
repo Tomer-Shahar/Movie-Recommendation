@@ -10,20 +10,13 @@ import math
 # noinspection PyPep8Naming
 class Parse:
 
-    def __init__(self, path: str, parserdict: dict = None):
+    def __init__(self, path: str):
 
-        if parserdict is None:
-            self.filePath = path
-            self.PearsonScoreDictionary = {}  # A dictionary mapping pearson correlation between users.
-            self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
-            self.users = {}  # A dictionary mapping user IDs to their average/ratings
-            self.movieNames = {}  # A dictionary that maps movie titles to their numbers
-        else:
-            self.filePath = parserdict['filePath']
-            self.PearsonScoreDictionary = parserdict['pearsonTable']
-            self.movies = parserdict['movies']
-            self.users = parserdict['users']
-            self.movieNames = parserdict['movieNames']
+        self.filePath = path
+        self.PearsonScoreDictionary = {}  # A dictionary mapping pearson correlation between users.
+        self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
+        self.users = {}  # A dictionary mapping user IDs to their average/ratings
+        self.movieNames = {}  # A dictionary that maps movie titles to their numbers
 
     def parse_movieDB_files(self):
 
@@ -104,7 +97,6 @@ class Parse:
                 continue
             title = movie.title
             if '"' in title:
-                #title = title[1:-1]
                 continue
             else:
                 title = title.split('(')[0].strip().lower()
@@ -221,17 +213,6 @@ class Parse:
                 title = title.split('(')[0].strip().lower()
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
 
-    def toDict(self):
-        parser_to_dict = {}
-        parser_to_dict['filePath'] = self.filePath
-        parser_to_dict['pearsonTable'] = self.PearsonScoreDictionary
-        parser_to_dict['movies'] = self.movies
-        parser_to_dict['users'] = self.users
-        parser_to_dict['movieNames'] = self.movieNames
-
-        return parser_to_dict
-
-
 class User:
 
     def __init__(self, Id):
@@ -265,5 +246,5 @@ class Movie:
         for user, rating in self.ratings.items():
             rating_sum += rating
             num += 1
-        if (num != 0):
+        if num != 0:
             self.averageRating = rating_sum / num
