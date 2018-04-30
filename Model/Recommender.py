@@ -93,7 +93,7 @@ class Parse:
     def get_top_x_movies_for_user(self, userId: int, top_x: int):
         top_x_list = []  # A sorted list of tuples - < predicted score, movie object >
         for movieId, movie in self.movies.items():
-            if userId in movie.ratings:
+            if userId in movie.ratings: # Don't recommend movies that the user has already seen
                 continue
             title = movie.title
             if '"' in title:
