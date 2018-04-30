@@ -27,7 +27,7 @@ class Controller:
         self.parser = None
         self.load_table()
         print("finished unpickling")
-        top_movies = self.parser.get_top_x_movies_for_user(20, 20)
+        top_movies = self.parser.get_top_x_movies_for_user(24, 20)
         print("Predicted score : Movie Title")
 
         for entry in top_movies:
