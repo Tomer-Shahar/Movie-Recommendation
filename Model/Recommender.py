@@ -134,19 +134,19 @@ class Parse:
             for row in reader:  # First of all, we'll calculate the average rating of each user
                 curr_id = int(row['userId'])
                 rating = float(row['rating'])
-                movie = int(row['movieId'])
+                movie_id = int(row['movieId'])
 
                 if curr_id not in self.users:  # Create a new user and adds it to the set
                     newUser = User(int(curr_id))
                     self.users[curr_id] = newUser
                     self.PearsonScoreDictionary[curr_id] = {}
 
-                self.users[curr_id].movies[movie] = rating  # add the movie and rating to the User object
+                self.users[curr_id].movies[movie_id] = rating  # add the movie and rating to the User object
 
-                if movie not in self.movies:
-                    self.movies[movie] = Movie(movie)
+                if movie_id not in self.movies:
+                    self.movies[movie_id] = Movie(movie_id)
 
-                self.movies[movie].ratings[curr_id] = rating  # update the user rating
+                self.movies[movie_id].ratings[curr_id] = rating  # update the user rating
 
     def __calculateAverages(self):
 
@@ -229,7 +229,6 @@ class User:
             i += 1
 
         self.averageUserRating = rating_sum / i
-
 
 class Movie:
 

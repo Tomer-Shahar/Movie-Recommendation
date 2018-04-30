@@ -14,18 +14,20 @@ class Controller:
     def __init__(self):
         print("Initializing GUI and stuff\n")
         self.parser = None
-        self.pearsonTable = None
+        #self.pearsonTable = None
 
     def start(self):
         #print("Open GUI and do stuff \n")
-        #self.parser = Parse('C:\\Users\\Tomer\\PycharmProjects\\movie-recommendation\\Database\\100k-small')
-        #self.create_table()
-        #print('Parsed DB file')
-        #self.write_recommender()
-        #self.parser = None
+        cwd = os.getcwd()  # current working directory
+        database_folder = cwd + '\\Database\\100k-small'
+        self.parser = Parse(database_folder)
+        self.create_table()
+        print('Parsed DB file')
+        self.write_recommender()
+        self.parser = None
         self.load_table()
         print("finished unpickling")
-        top_movies = self.parser.get_top_x_movies_for_user(182, 12)
+        top_movies = self.parser.get_top_x_movies_for_user(20, 20)
         print("Predicted score : Movie Title")
 
         for entry in top_movies:
