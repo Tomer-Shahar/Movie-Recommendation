@@ -24,9 +24,12 @@ class Parse:
         self.__mapMovieNames()
         self.__calculateAverages()
         self.__populateNeighbors()
+        self.__calculateSimilarities()
+        print("Done parsing")
 
+    def __calculateSimilarities(self):
         top = 30
-        for user_a_id, user_a in self.users.items():         # Creating the actual pearson table
+        for user_a_id, user_a in self.users.items():  # Creating the actual pearson table
             top_neighbors = []  # A list of tuples containing the 30 closest neighbors < userId , correlation >
             for user_w in user_a.neighbors:
                 score = self.__calculate_score(user_a, self.users[user_w])
@@ -93,7 +96,7 @@ class Parse:
     def get_top_x_movies_for_user(self, userId: int, top_x: int):
         top_x_list = []  # A sorted list of tuples - < predicted score, movie object >
         for movieId, movie in self.movies.items():
-            if userId in movie.ratings: # Don't recommend movies that the user has already seen
+            if userId in movie.ratings:  # Don't recommend movies that the user has already seen
                 continue
             title = movie.title
             if '"' in title:
@@ -122,8 +125,51 @@ class Parse:
         return pair[0]
 
     # Retrieves titles and ratings of top X movies
-    def get_top_rated_movies(self, top_x):
-        pass
+    def get_top_rated_movies_global(self, top_x):
+        top_x_list = []  # A sorted list of tuples - < Movie Name, Movie Score >
+        min_num_of_ratings = 25
+        for movieId, movie in self.movies.items():
+            if len(movie.ratings.keys()) < min_num_of_ratings:
+                continue
+            if len(top_x_list) < top_x:  # If there aren't X movies yet in the list, append it anyway
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+            else:
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+                del top_x_list[-1]
+
+        for i in range(0, len(top_x_list)):
+            title = top_x_list[i][0]
+            score = round(top_x_list[i][1], 2)
+            top_x_list[i] = (title, score)
+
+        return top_x_list
+
+    def get_top_movies_for_genre(self, genre: str, top_x: int):
+        top_x_list = []  # A sorted list of tuples - < Movie Name, Movie Score >
+        min_num_of_ratings = 20
+        for movieId, movie in self.movies.items():
+            if len(movie.ratings.keys()) < min_num_of_ratings or \
+                    genre not in movie.genres:
+                continue
+            if len(top_x_list) < top_x:  # If there aren't X movies yet in the list, append it anyway
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+            else:
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+                del top_x_list[-1]
+
+        for i in range(0, len(top_x_list)):
+            title = top_x_list[i][0]
+            score = round(top_x_list[i][1], 2)
+            top_x_list[i] = (title, score)
+        return top_x_list
 
     # A method that populates the movieRatingsPerUser and users dictionary
     def __create_dictionaries(self):
@@ -171,6 +217,7 @@ class Parse:
         ---- Helpful classes ----
     """
 
+    # Returns similarity between two users (W_a,u)
     def __calculate_score(self, user_a, user_w):
 
         commonMovies = user_a.movies.keys() & user_w.movies.keys()
@@ -207,11 +254,14 @@ class Parse:
             for row in movie_reader:
                 title = row['title']
                 movieID = int(row['movieId'])
+                genres = set(row['genres'].split('|'))
                 if (movieID not in self.movies):
                     self.movies[movieID] = Movie(movieID)
                 self.movies[movieID].title = title  # Keep original name
                 title = title.split('(')[0].strip().lower()
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
+                self.movies[movieID].genres = genres
+
 
 class User:
 
@@ -230,6 +280,7 @@ class User:
 
         self.averageUserRating = rating_sum / i
 
+
 class Movie:
 
     def __init__(self, number):
@@ -237,7 +288,7 @@ class Movie:
         self.title = ''
         self.ratings = {}  # A dictionary mapping user to rating (for this movie) < userID : Rating >
         self.averageRating = -1
-        self.genres = []
+        self.genres = set()
 
     def calculate_average_rating(self):
         rating_sum = 0
