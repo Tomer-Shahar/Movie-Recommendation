@@ -56,7 +56,7 @@ class recommenderGui:
     self.existingUserLoginWindow.close()
 
   def showMainWindow(self):
-
+    self.
   def closeRecWindow(self, event):
     print("close")
     event.accept()
