@@ -21,7 +21,7 @@ class Controller:
         #print("Open GUI and do stuff \n")
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
-        #self.parser = Parse(database_folder)
+        self.parser = Parse(database_folder)
         #self.create_table()
         #self.write_recommender()
         self.load_table()
@@ -72,3 +72,6 @@ class Controller:
     def add_user(self, ratings: list):
         new_id = self.parser.add_new_user(ratings)
         return new_id
+
+    def user_exists(self, user_id):
+        return user_id in self.parser.users

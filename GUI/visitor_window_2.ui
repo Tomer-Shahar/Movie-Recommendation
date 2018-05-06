@@ -6,20 +6,77 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>869</width>
+    <height>671</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTableWidget" name="popularTable">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>20</y>
+      <width>661</width>
+      <height>521</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>Movie name</string>
+     </property>
+     <property name="textAlignment">
+      <set>AlignCenter</set>
+     </property>
+     <property name="background">
+      <color>
+       <red>40</red>
+       <green>145</green>
+       <blue>168</blue>
+      </color>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Year</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Rank</string>
+     </property>
+     <property name="textAlignment">
+      <set>AlignCenter</set>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Your rank</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QPushButton" name="submit_button">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>570</y>
+      <width>101</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Submit</string>
+    </property>
+   </widget>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>869</width>
      <height>26</height>
     </rect>
    </property>
