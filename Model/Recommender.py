@@ -17,6 +17,7 @@ class Parse:
         self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
         self.users = {}  # A dictionary mapping user IDs to their average/ratings
         self.movieNames = {}  # A dictionary that maps movie titles to their numbers
+        self.sequentialID = 700
 
     def parse_movieDB_files(self):
 
@@ -27,10 +28,39 @@ class Parse:
         self.__calculateSimilarities()
         print("Done parsing")
 
+    # Receives a list of tuples containing the movies and their ratings for a new user
+    # Adds the user to the system: create user, update neighbors, update average movie score
+    def add_new_user(self, newRatings: list):
+        newUser = User(self.sequentialID)
+        self.PearsonScoreDictionary[newUser.ID] = {}  # create new entry in the pearson table
+        for rating in newRatings:  # < movie name (year) : rating >
+            score = float(rating[1])
+            movieID = self.get_movie_id(rating[0])
+            movieName = rating[0].lower().split('(')[0].strip()
+
+            newUser.movies[movieID] = score
+            self.movies[movieID].ratings[self.sequentialID] = score  # add the user to the list of users that have seen the movie
+            self.movies[movieID].calculate_average_rating()
+
+        for movie_id in newUser.movies:  # iterate over movies the new user has seen
+            for user in self.movies[movie_id].ratings:  # iterate over the users that have seen the movie
+                if user == newUser.ID:
+                    continue
+                self.users[user].neighbors.add(newUser.ID)
+                newUser.neighbors.add(user)
+
+        newUser.calculate_average()
+        self.users[self.sequentialID] = newUser
+        self.__calculateSimilarities()
+        self.sequentialID += 1
+        return newUser.ID
+
     def __calculateSimilarities(self):
         top = 30
         for user_a_id, user_a in self.users.items():  # Creating the actual pearson table
             top_neighbors = []  # A list of tuples containing the 30 closest neighbors < userId , correlation >
+            if len(user_a.neighbors) == top:
+                continue
             for user_w in user_a.neighbors:
                 score = self.__calculate_score(user_a, self.users[user_w])
                 if score < 0:
@@ -56,6 +86,7 @@ class Parse:
         return self.PearsonScoreDictionary
 
     def get_movie_id(self, movie_title):
+        movie_title = movie_title.lower().split('(')[0].strip()
         return self.movieNames[movie_title]
 
     def get_movie_name(self, movieID):
@@ -186,6 +217,7 @@ class Parse:
                     newUser = User(int(curr_id))
                     self.users[curr_id] = newUser
                     self.PearsonScoreDictionary[curr_id] = {}
+                    self.sequentialID = curr_id
 
                 self.users[curr_id].movies[movie_id] = rating  # add the movie and rating to the User object
 
@@ -193,6 +225,7 @@ class Parse:
                     self.movies[movie_id] = Movie(movie_id)
 
                 self.movies[movie_id].ratings[curr_id] = rating  # update the user rating
+            self.sequentialID += 1
 
     def __calculateAverages(self):
 
@@ -213,9 +246,7 @@ class Parse:
                     else:
                         self.users[user1].neighbors.add(user2)
 
-    """
-        ---- Helpful classes ----
-    """
+
 
     # Returns similarity between two users (W_a,u)
     def __calculate_score(self, user_a, user_w):
@@ -255,12 +286,16 @@ class Parse:
                 title = row['title']
                 movieID = int(row['movieId'])
                 genres = set(row['genres'].split('|'))
-                if (movieID not in self.movies):
+                if movieID not in self.movies:
                     self.movies[movieID] = Movie(movieID)
                 self.movies[movieID].title = title  # Keep original name
                 title = title.split('(')[0].strip().lower()
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
                 self.movies[movieID].genres = genres
+
+    """
+        ---- Helpful classes ----
+    """
 
 
 class User:

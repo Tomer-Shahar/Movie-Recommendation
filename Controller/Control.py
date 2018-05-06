@@ -23,8 +23,20 @@ class Controller:
         #self.create_table()
         #self.write_recommender()
         self.load_table()
-        self.get_top_movies_global(20)
-        self.get_top_x_movies_for_genre('Action', 15)
+        ratings = [("Out of Sight (1998)", 1.0),
+                   ("Armageddon (1998)", 4.5),
+                   ("Madeline (1998)", 1.0),
+                   ("Grand Hotel (1932)", 0.5),
+                   ("Johnny English (2003)", 1.0),
+                   ("Matchstick Men (2003)", 5.0),
+                   ("Texas Chainsaw Massacre, The (2003)", 1.0),
+                   ("2012 (2009)", 1.0), ("Godfather, The (1972)", 1.0),
+                   ("Breakfast at Tiffany's (1961)", 2.0)]
+        new_ID = self.add_user(ratings)
+        self.get_personal_recommendations(new_ID, "10")
+
+        #self.get_top_movies_global(20)
+        #self.get_top_x_movies_for_genre('Action', 15)
 
     def create_table(self):
         self.parser.parse_movieDB_files()
@@ -43,7 +55,7 @@ class Controller:
     def get_personal_recommendations(self, userID: str, numOfMovies: str):
         top_movies = self.parser.get_top_x_movies_for_user(int(userID), int(numOfMovies))
         print("Predicted score : Movie Title")
-        returnedList =[]
+        returnedList = []
         for entry in top_movies:
             print(entry[0], " : ", entry[1].title)
             returnedList.append(entry[1].title)
@@ -65,6 +77,7 @@ class Controller:
             print(entry[0], " : ", entry[1])
         return topList
 
-
-    def add_user(self):
-        pass
+    # Adds new users to system, receives a list of movies he ranked.
+    def add_user(self, ratings: list):
+        new_id = self.parser.add_new_user(ratings)
+        return new_id
