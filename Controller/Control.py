@@ -21,9 +21,9 @@ class Controller:
         #print("Open GUI and do stuff \n")
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
-        self.parser = Parse(database_folder)
-        self.create_table()
-        self.write_recommender()
+        #self.parser = Parse(database_folder)
+        #self.create_table()
+        #self.write_recommender()
         self.load_table()
         self.gui.showMainWindow()
         #self.get_top_movies_global(20)
@@ -46,7 +46,7 @@ class Controller:
     def get_personal_recommendations(self, userID: str, numOfMovies: str):
         top_movies = self.parser.get_top_x_movies_for_user(int(userID), int(numOfMovies))
         print("Predicted score : Movie Title")
-        returnedList =[]
+        returnedList = []
         for entry in top_movies:
             print(entry[0], " : ", entry[1].title)
             returnedList.append(entry[1].title)
@@ -68,7 +68,7 @@ class Controller:
             print(entry[0], " : ", entry[1])
         return topList
 
-    def getAllUsers(self):
-        return self.parser.users
-    def add_user(self):
-        pass
+    # Adds new users to system, receives a list of movies he ranked.
+    def add_user(self, ratings: list):
+        new_id = self.parser.add_new_user(ratings)
+        return new_id
