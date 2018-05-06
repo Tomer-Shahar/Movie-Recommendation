@@ -6,25 +6,28 @@ Controller class - manages the flow between the recommendation system and the GU
 from Model.Recommender import Parse
 from Model import Writer
 from Model import Reader
+from GUI.View import recommenderGui
 import os
 
 
 class Controller:
 
     def __init__(self):
-        print("Initializing GUI and stuff\n")
         self.parser = None
+        self.gui = recommenderGui(self)
+
 
     def start(self):
         #print("Open GUI and do stuff \n")
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
-        #self.parser = Parse(database_folder)
-        #self.create_table()
-        #self.write_recommender()
+        self.parser = Parse(database_folder)
+        self.create_table()
+        self.write_recommender()
         self.load_table()
-        self.get_top_movies_global(20)
-        self.get_top_x_movies_for_genre('Action', 15)
+        self.gui.showMainWindow()
+        #self.get_top_movies_global(20)
+        #self.get_top_x_movies_for_genre('Action', 15)
 
     def create_table(self):
         self.parser.parse_movieDB_files()
@@ -65,6 +68,7 @@ class Controller:
             print(entry[0], " : ", entry[1])
         return topList
 
-
+    def getAllUsers(self):
+        return self.parser.users
     def add_user(self):
         pass
