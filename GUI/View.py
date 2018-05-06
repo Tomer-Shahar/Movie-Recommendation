@@ -9,7 +9,6 @@ class recommenderGui:
 
   def __init__(self, controller):
     self.controller = controller
-    self.loginWindow = None
     self.mainWindow = None
     self.existingUserLoginWindow = None
     self.existingUserWindow = None
@@ -38,7 +37,8 @@ class recommenderGui:
    # print(self.loginWindow.input_id.text())
 
   def openExistingUserWindow(self):
-    self.existingUserWindow.main_menu_button.clicked.connect(showMainWindow)
+    self.existingUserWindow.main_menu_button.clicked.connect(self.returnToMainWindow())
+    self.existingUserWindow.login_button.clicked.connect(self.showLoginWindow())
     user_id = self.existingUserLoginWindow.input_id.text()
     num_of_movie = self.existingUserLoginWindow.comboBox.currentText()
     recommendations = self.controller.get_personal_recommendations(user_id, num_of_movie)
@@ -55,8 +55,14 @@ class recommenderGui:
     self.existingUserWindow.show()
     self.existingUserLoginWindow.close()
 
-  def showMainWindow(self):
-    self.
+  def returnToMainWindow(self):
+    self.existingUserWindow.close()
+    self.mainWindow.show()
+
+  def showLoginWindow(self):
+    self.existingUserWindow.close()
+    self.existingUserLoginWindow.show()
+
   def closeRecWindow(self, event):
     print("close")
     event.accept()
