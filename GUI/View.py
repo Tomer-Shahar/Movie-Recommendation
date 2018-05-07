@@ -1,5 +1,3 @@
-
-
 import sys
 from PyQt5 import QtWidgets, QtGui, uic
 from PyQt5.QtGui import QIntValidator
@@ -46,6 +44,7 @@ class recommenderGui:
       self.visitorWindow.popularTable.item(i,2).setFlags(QtCore.Qt.ItemIsEnabled)
       self.visitorWindow.popularTable.setItem(i,3,QTableWidgetItem(""))
       i = i+1
+    self.visitorWindow.return_to_menu_button.clicked.connect(self.returnToMainWindowFromVisitor)
     self.visitorWindow.submit_button.clicked.connect(self.submit)
     header = self.visitorWindow.popularTable.horizontalHeader()
     header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
@@ -58,33 +57,33 @@ class recommenderGui:
     user_ratings = []
     success = False
     popularMovies = self.controller.get_top_movies_global(20)
+    number_of_rated_movies = 0
     for i in range(0,20):
       rank_score = self.visitorWindow.popularTable.item(i,3).text()
-       # if not rank_score.isdigit():
-       # message_box = QMessageBox()
-       # message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've entered a number between 0 and 5.")
-       # message_box.close()
-       # self.visitorWindow.show()
-       # break
-
       movie_to_rank = popularMovies[i][0]
       try:
         rank_number = float(rank_score)
         if rank_number < 0 or rank_number > 5:
-          message_box = QMessageBox()
-          message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've entered a number between 0 and 5.")
-          message_box.close()
-          self.visitorWindow.show()
-          break
-        ranked_movie = (movie_to_rank, rank_number)
-        user_ratings.append(ranked_movie)
-        if i==19:
+          if i == 19:
+            message_box = QMessageBox()
+            message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
+            message_box.close()
+            self.visitorWindow.show()
+            break
+        else:
+          ranked_movie = (movie_to_rank, rank_number)
+          user_ratings.append(ranked_movie)
+          number_of_rated_movies+=1
+        if number_of_rated_movies >= 5:
           success = True
       except ValueError:
-        message_box = QMessageBox()
-        message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've entered a number between 0 and 5.")
-        message_box.close()
-        self.visitorWindow.show()
+        if i == 19:
+          if number_of_rated_movies<5:
+            message_box = QMessageBox()
+            message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
+            message_box.close()
+            self.visitorWindow.show()
+            break
     if success:
       new_user_id = self.controller.add_user(user_ratings)
       self.newUserID = QtWidgets.QDialog()
@@ -151,8 +150,11 @@ class recommenderGui:
 
   def returnToLoginWindow(self):
     self.visitorWindow.close()
-    self.existingUserLoginWindow.show()
+    self.mainWindow.show()
 
+  def returnToMainWindowFromVisitor(self):
+    self.visitorWindow.close()
+    self.mainWindow.show()
   def closeRecWindow(self, event):
     print("close")
     event.accept()

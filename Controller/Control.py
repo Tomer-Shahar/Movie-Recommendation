@@ -45,10 +45,10 @@ class Controller:
     # Given a user ID and X, returns a list containing the top X movies for the given user.
     def get_personal_recommendations(self, userID: str, numOfMovies: str):
         top_movies = self.parser.get_top_x_movies_for_user(int(userID), int(numOfMovies))
-        print("Predicted score : Movie Title")
+        # print("Predicted score : Movie Title")
         returnedList = []
         for entry in top_movies:
-            print(entry[0], " : ", entry[1].title)
+            # print(entry[0], " : ", entry[1].title)
             returnedList.append(entry[1].title)
 
         return returnedList
@@ -56,9 +56,9 @@ class Controller:
     # Given a number X, returns the top X movies by average rating.
     def get_top_movies_global(self, top: int):
         topList = self.parser.get_top_rated_movies_global(int(top))
-        print("Movie Title : Score")
-        for entry in topList:
-            print(entry[0], " : ", entry[1])
+        # print("Movie Title : Score")
+        # for entry in topList:
+           # print(entry[0], " : ", entry[1])
         return topList
 
     def get_top_x_movies_for_genre(self, genre: str, topX: int):

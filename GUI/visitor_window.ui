@@ -96,9 +96,9 @@
   <widget class="QPushButton" name="submit_button">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>210</x>
      <y>680</y>
-     <width>101</width>
+     <width>201</width>
      <height>51</height>
     </rect>
    </property>
@@ -126,17 +126,19 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>651</width>
+     <width>851</width>
      <height>41</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
-    <string>Please rank the following movies so we can give you recommendations that suit you</string>
+    <string>Please rank at least 5 of the following movies so we can give you recommendations that suit you</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
@@ -144,17 +146,47 @@
     <rect>
      <x>10</x>
      <y>50</y>
-     <width>261</width>
+     <width>291</width>
      <height>16</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
     <string>Give score between 1.0 and 5.0</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="return_to_menu_button">
+   <property name="geometry">
+    <rect>
+     <x>470</x>
+     <y>680</y>
+     <width>201</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="toolTipDuration">
+    <number>-1</number>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgba(40,70,170,0.9)
+</string>
+   </property>
+   <property name="text">
+    <string>Return to main menu</string>
    </property>
   </widget>
  </widget>

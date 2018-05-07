@@ -16,9 +16,9 @@
   <widget class="QTableWidget" name="recommendationsTable">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>130</x>
      <y>60</y>
-     <width>311</width>
+     <width>541</width>
      <height>371</height>
     </rect>
    </property>
