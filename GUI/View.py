@@ -64,18 +64,19 @@ class recommenderGui:
       try:
         rank_number = float(rank_score)
         if rank_number < 0 or rank_number > 5:
-          if i == 19:
-            message_box = QMessageBox()
-            message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
-            message_box.close()
-            self.visitorWindow.show()
-            break
+          #if i == 19:
+          message_box = QMessageBox()
+          message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
+          message_box.close()
+          self.visitorWindow.show()
+          success = False
+          break
         else:
           ranked_movie = (movie_to_rank, rank_number)
           user_ratings.append(ranked_movie)
           number_of_rated_movies+=1
-        if number_of_rated_movies >= 5:
-          success = True
+          if number_of_rated_movies >= 5:
+            success = True
       except ValueError:
         if i == 19:
           if number_of_rated_movies<5:
