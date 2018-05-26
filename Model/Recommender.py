@@ -17,6 +17,7 @@ class Parse:
         self.movies = {}  # A dictionary containing each movie and the ratings it Receives per user
         self.users = {}  # A dictionary mapping user IDs to their average/ratings
         self.movieNames = {}  # A dictionary that maps movie titles to their numbers
+        self.sequentialID = 700
 
     def parse_movieDB_files(self):
 
@@ -24,10 +25,42 @@ class Parse:
         self.__mapMovieNames()
         self.__calculateAverages()
         self.__populateNeighbors()
+        self.__calculateSimilarities()
+        print("Done parsing")
 
+    # Receives a list of tuples containing the movies and their ratings for a new user
+    # Adds the user to the system: create user, update neighbors, update average movie score
+    def add_new_user(self, newRatings: list):
+        newUser = User(self.sequentialID)
+        self.PearsonScoreDictionary[newUser.ID] = {}  # create new entry in the pearson table
+        for rating in newRatings:  # < movie name (year) : rating >
+            score = float(rating[1])
+            movieID = self.get_movie_id(rating[0])
+            movieName = rating[0].lower().split('(')[0].strip()
+
+            newUser.movies[movieID] = score
+            self.movies[movieID].ratings[self.sequentialID] = score  # add the user to the list of users that have seen the movie
+            self.movies[movieID].calculate_average_rating()
+
+        for movie_id in newUser.movies:  # iterate over movies the new user has seen
+            for user in self.movies[movie_id].ratings:  # iterate over the users that have seen the movie
+                if user == newUser.ID:
+                    continue
+                self.users[user].neighbors.add(newUser.ID)
+                newUser.neighbors.add(user)
+
+        newUser.calculate_average()
+        self.users[self.sequentialID] = newUser
+        self.__calculateSimilarities()
+        self.sequentialID += 1
+        return newUser.ID
+
+    def __calculateSimilarities(self):
         top = 30
-        for user_a_id, user_a in self.users.items():         # Creating the actual pearson table
+        for user_a_id, user_a in self.users.items():  # Creating the actual pearson table
             top_neighbors = []  # A list of tuples containing the 30 closest neighbors < userId , correlation >
+            if len(user_a.neighbors) == top:
+                continue
             for user_w in user_a.neighbors:
                 score = self.__calculate_score(user_a, self.users[user_w])
                 if score < 0:
@@ -53,6 +86,7 @@ class Parse:
         return self.PearsonScoreDictionary
 
     def get_movie_id(self, movie_title):
+        movie_title = movie_title.lower().split('(')[0].strip()
         return self.movieNames[movie_title]
 
     def get_movie_name(self, movieID):
@@ -93,7 +127,7 @@ class Parse:
     def get_top_x_movies_for_user(self, userId: int, top_x: int):
         top_x_list = []  # A sorted list of tuples - < predicted score, movie object >
         for movieId, movie in self.movies.items():
-            if userId in movie.ratings:
+            if userId in movie.ratings:  # Don't recommend movies that the user has already seen
                 continue
             title = movie.title
             if '"' in title:
@@ -122,8 +156,51 @@ class Parse:
         return pair[0]
 
     # Retrieves titles and ratings of top X movies
-    def get_top_rated_movies(self, top_x):
-        pass
+    def get_top_rated_movies_global(self, top_x):
+        top_x_list = []  # A sorted list of tuples - < Movie Name, Movie Score >
+        min_num_of_ratings = 25
+        for movieId, movie in self.movies.items():
+            if len(movie.ratings.keys()) < min_num_of_ratings:
+                continue
+            if len(top_x_list) < top_x:  # If there aren't X movies yet in the list, append it anyway
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+            else:
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+                del top_x_list[-1]
+
+        for i in range(0, len(top_x_list)):
+            title = top_x_list[i][0]
+            score = round(top_x_list[i][1], 2)
+            top_x_list[i] = (title, score)
+
+        return top_x_list
+
+    def get_top_movies_for_genre(self, genre: str, top_x: int):
+        top_x_list = []  # A sorted list of tuples - < Movie Name, Movie Score >
+        min_num_of_ratings = 20
+        for movieId, movie in self.movies.items():
+            if len(movie.ratings.keys()) < min_num_of_ratings or \
+                    genre not in movie.genres:
+                continue
+            if len(top_x_list) < top_x:  # If there aren't X movies yet in the list, append it anyway
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+            else:
+                entry = (movie.title, movie.averageRating)
+                top_x_list.append(entry)
+                top_x_list.sort(key=lambda x: x[1], reverse=True)
+                del top_x_list[-1]
+
+        for i in range(0, len(top_x_list)):
+            title = top_x_list[i][0]
+            score = round(top_x_list[i][1], 2)
+            top_x_list[i] = (title, score)
+        return top_x_list
 
     # A method that populates the movieRatingsPerUser and users dictionary
     def __create_dictionaries(self):
@@ -134,19 +211,21 @@ class Parse:
             for row in reader:  # First of all, we'll calculate the average rating of each user
                 curr_id = int(row['userId'])
                 rating = float(row['rating'])
-                movie = int(row['movieId'])
+                movie_id = int(row['movieId'])
 
                 if curr_id not in self.users:  # Create a new user and adds it to the set
                     newUser = User(int(curr_id))
                     self.users[curr_id] = newUser
                     self.PearsonScoreDictionary[curr_id] = {}
+                    self.sequentialID = curr_id
 
-                self.users[curr_id].movies[movie] = rating  # add the movie and rating to the User object
+                self.users[curr_id].movies[movie_id] = rating  # add the movie and rating to the User object
 
-                if movie not in self.movies:
-                    self.movies[movie] = Movie(movie)
+                if movie_id not in self.movies:
+                    self.movies[movie_id] = Movie(movie_id)
 
-                self.movies[movie].ratings[curr_id] = rating  # update the user rating
+                self.movies[movie_id].ratings[curr_id] = rating  # update the user rating
+            self.sequentialID += 1
 
     def __calculateAverages(self):
 
@@ -167,10 +246,9 @@ class Parse:
                     else:
                         self.users[user1].neighbors.add(user2)
 
-    """
-        ---- Helpful classes ----
-    """
 
+
+    # Returns similarity between two users (W_a,u)
     def __calculate_score(self, user_a, user_w):
 
         commonMovies = user_a.movies.keys() & user_w.movies.keys()
@@ -207,11 +285,18 @@ class Parse:
             for row in movie_reader:
                 title = row['title']
                 movieID = int(row['movieId'])
-                if (movieID not in self.movies):
+                genres = set(row['genres'].split('|'))
+                if movieID not in self.movies:
                     self.movies[movieID] = Movie(movieID)
                 self.movies[movieID].title = title  # Keep original name
                 title = title.split('(')[0].strip().lower()
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
+                self.movies[movieID].genres = genres
+
+    """
+        ---- Helpful classes ----
+    """
+
 
 class User:
 
@@ -238,7 +323,7 @@ class Movie:
         self.title = ''
         self.ratings = {}  # A dictionary mapping user to rating (for this movie) < userID : Rating >
         self.averageRating = -1
-        self.genres = []
+        self.genres = set()
 
     def calculate_average_rating(self):
         rating_sum = 0
