@@ -75,3 +75,8 @@ class Controller:
 
     def user_exists(self, user_id):
         return user_id in self.parser.users
+
+    def checkUserInput(self, ranks: list):
+        isValidUserInput, user_ratings = self.parser.checkUserInput(ranks)
+        return (isValidUserInput, user_ratings)
+

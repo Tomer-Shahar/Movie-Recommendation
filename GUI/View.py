@@ -54,38 +54,16 @@ class recommenderGui:
     self.mainWindow.close()
 
   def submit(self):
-    user_ratings = []
-    success = False
-    popularMovies = self.controller.get_top_movies_global(20)
-    number_of_rated_movies = 0
+    ranks = []
     for i in range(0,20):
-      rank_score = self.visitorWindow.popularTable.item(i,3).text()
-      movie_to_rank = popularMovies[i][0]
-      try:
-        rank_number = float(rank_score)
-        if rank_number < 0 or rank_number > 5:
-          #if i == 19:
+      ranks.append(self.visitorWindow.popularTable.item(i,3).text())
+    isValidUserInput, user_ratings = self.controller.checkUserInput(ranks)
+    if(not isValidUserInput):
           message_box = QMessageBox()
           message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
           message_box.close()
           self.visitorWindow.show()
-          success = False
-          break
-        else:
-          ranked_movie = (movie_to_rank, rank_number)
-          user_ratings.append(ranked_movie)
-          number_of_rated_movies+=1
-          if number_of_rated_movies >= 5:
-            success = True
-      except ValueError:
-        if i == 19:
-          if number_of_rated_movies<5:
-            message_box = QMessageBox()
-            message_box.about(self.visitorWindow, "Wrong input", "Please ensure you've rated at least 5 movies and that you've entered a number between 0 and 5.")
-            message_box.close()
-            self.visitorWindow.show()
-            break
-    if success:
+    else:
       new_user_id = self.controller.add_user(user_ratings)
       self.newUserID = QtWidgets.QDialog()
       self.newUserID = uic.loadUi('GUI/new_user_id.ui', self.newUserID)
