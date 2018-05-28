@@ -16,18 +16,18 @@ class Controller:
         self.parser = None
         self.gui = recommenderGui(self)
 
-
     def start(self):
-        #print("Open GUI and do stuff \n")
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
         self.parser = Parse(database_folder)
-        #self.create_table()
-        #self.write_recommender()
         self.load_table()
         self.gui.showMainWindow()
-        #self.get_top_movies_global(20)
-        #self.get_top_x_movies_for_genre('Action', 15)
+
+    def start_no_GUI(self):
+        cwd = os.getcwd()  # current working directory
+        database_folder = cwd + '\\Database\\100k-small'
+        self.parser = Parse(database_folder)
+        self.load_table()
 
     def create_table(self):
         self.parser.parse_movieDB_files()
@@ -58,7 +58,7 @@ class Controller:
         topList = self.parser.get_top_rated_movies_global(int(top))
         # print("Movie Title : Score")
         # for entry in topList:
-           # print(entry[0], " : ", entry[1])
+        # print(entry[0], " : ", entry[1])
         return topList
 
     def get_top_x_movies_for_genre(self, genre: str, topX: int):
@@ -80,3 +80,6 @@ class Controller:
         isValidUserInput, user_ratings = self.parser.checkUserInput(ranks)
         return (isValidUserInput, user_ratings)
 
+    def run_accuracy_test(self, n: int):
+        self.parser.run_accuracy_test(n)
+        pass

@@ -5,6 +5,9 @@ This class parses the movie rating file and creates a huge array containing the 
 """
 import csv
 import math
+import random
+import copy
+from random import randint
 
 
 # noinspection PyPep8Naming
@@ -37,9 +40,9 @@ class Parse:
             score = float(rating[1])
             movieID = self.get_movie_id(rating[0])
             movieName = rating[0].lower().split('(')[0].strip()
-
             newUser.movies[movieID] = score
-            self.movies[movieID].ratings[self.sequentialID] = score  # add the user to the list of users that have seen the movie
+            self.movies[movieID].ratings[
+                self.sequentialID] = score  # add the user to the list of users that have seen the movie
             self.movies[movieID].calculate_average_rating()
 
         for movie_id in newUser.movies:  # iterate over movies the new user has seen
@@ -246,8 +249,6 @@ class Parse:
                     else:
                         self.users[user1].neighbors.add(user2)
 
-
-
     # Returns similarity between two users (W_a,u)
     def __calculate_score(self, user_a, user_w):
 
@@ -293,7 +294,6 @@ class Parse:
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
                 self.movies[movieID].genres = genres
 
-
     def checkUserInput(self, ranks: list):
         user_ratings = []
         popularMovies = self.get_top_rated_movies_global(20)
@@ -305,7 +305,7 @@ class Parse:
             try:
                 rank_number = float(rank_score)
                 if rank_number < 0 or rank_number > 5:
-                    return (False, user_ratings)
+                    return False, user_ratings
                 else:
                     ranked_movie = (movie_to_rank, rank_number)
                     user_ratings.append(ranked_movie)
@@ -315,20 +315,56 @@ class Parse:
             except ValueError:
                 if i == 19:
                     if number_of_rated_movies < 5:
-                        return (False, user_ratings)
-        return (True, user_ratings)
+                        return False, user_ratings
+        return True, user_ratings
+
+    # Performs an accuracy test n times
+    def run_accuracy_test(self, n: int):
+        numOfUsers = len(self.users)
+
+        for i in range(1, n):
+            userID = randint(0, numOfUsers)  # Choose random user
+            userForTest = User(userID, self.users[userID]) #copy the user, remove and insert later.
+            trainSet, testSet = self.splitSets(userID)
+            rmse = self.calc_rmse(trainSet, testSet,userID)
+
+    def remove_user(self, userID):
+        pass
+
+    def splitSets(self, userID):
+        userMovies = self.users[userID].movies
+        random.shuffle(userMovies)
+        trainSize = len(userMovies) * 0.8
+        trainSet = userMovies[:trainSize]
+        testSet = userMovies[trainSize:]
+        return trainSet, testSet
+
+    def add_old_user(self, userID):
+        pass
+
+    def calc_rmse(self, trainSet, testSet, userId):
+        movieName = ""
+        score = self.compute_prediction_for_movie(userId, movieName)
+        return score
+        pass
+
     """
         ---- Helpful classes ----
     """
 
-
 class User:
 
-    def __init__(self, Id):
-        self.ID = Id
-        self.movies = {}  # A dictionary of movies seen by the user and their ratings.
-        self.neighbors = set()  # A dictionary containing a user and a set of neighbours (BY ID!!!)
-        self.averageUserRating = -1  # The users average rating.
+    def __init__(self, Id: int, orig=None):
+        if orig is None:
+            self.ID = Id
+            self.movies = {}  # A dictionary of movies seen by the user and their ratings.
+            self.neighbors = set()  # A dictionary containing a user and a set of neighbours (BY ID!!!)
+            self.averageUserRating = -1  # The users average rating.
+        else: # copy constructor
+            self.ID = orig.ID
+            self.movies = copy.deepcopy(orig.movies)
+            self.neighbors = copy.deepcopy(orig.neighbors)
+            self.averageUserRating = orig.averageUserRating
 
     def calculate_average(self):
         i = 0
@@ -338,6 +374,8 @@ class User:
             i += 1
 
         self.averageUserRating = rating_sum / i
+
+    def __init__(self, other: User):
 
 
 class Movie:

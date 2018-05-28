@@ -1,24 +1,11 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
-    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="ignoredIdentifiers">
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
         <list>
-          <option value="GUI.View.__author__" />
-          <option value="GUI.View.__date__" />
-          <option value="GUI.View.SLOT" />
-          <option value="GUI.View.DEFAULT_DAYS_FROM_LAST_AUDIT" />
-          <option value="GUI.View.EventlogParser" />
-          <option value="GUI.View.L1ATE_HOUR" />
-          <option value="GUI.View.LATE_HOUR" />
-          <option value="GUI.View.RED_EVENTIDS" />
-          <option value="GUI.View.EVENT_DESC" />
-          <option value="GUI.View.YELLOW_EVENTIDS" />
-          <option value="GUI.View.ORANGE_EVENTIDS" />
-          <option value="GUI.View.OTHER_EVENTIDS" />
-          <option value="GUI.View.GREEN_EVENTIDS" />
-          <option value="GUI.View.__builtin__" />
-          <option value="GUI.View.xrange" />
+          <option value="N802" />
+          <option value="N803" />
         </list>
       </option>
     </inspection_tool>
