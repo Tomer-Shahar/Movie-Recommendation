@@ -293,6 +293,30 @@ class Parse:
                 self.movieNames[title] = movieID  # make it lower-case for search purposes
                 self.movies[movieID].genres = genres
 
+
+    def checkUserInput(self, ranks: list):
+        user_ratings = []
+        popularMovies = self.get_top_rated_movies_global(20)
+        number_of_rated_movies = 0
+        success = False
+        for i in range(0, 20):
+            rank_score = ranks[i]
+            movie_to_rank = popularMovies[i][0]
+            try:
+                rank_number = float(rank_score)
+                if rank_number < 0 or rank_number > 5:
+                    return (False, user_ratings)
+                else:
+                    ranked_movie = (movie_to_rank, rank_number)
+                    user_ratings.append(ranked_movie)
+                    number_of_rated_movies += 1
+                    if number_of_rated_movies >= 5:
+                        success = True
+            except ValueError:
+                if i == 19:
+                    if number_of_rated_movies < 5:
+                        return (False, user_ratings)
+        return (True, user_ratings)
     """
         ---- Helpful classes ----
     """
