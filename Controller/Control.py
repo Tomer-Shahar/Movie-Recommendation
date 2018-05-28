@@ -16,6 +16,7 @@ class Controller:
         self.parser = None
         self.gui = recommenderGui(self)
 
+
     def start(self):
         #print("Open GUI and do stuff \n")
         cwd = os.getcwd()  # current working directory
@@ -45,26 +46,26 @@ class Controller:
     def get_personal_recommendations(self, userID: str, numOfMovies: str):
         top_movies = self.parser.get_top_x_movies_for_user(int(userID), int(numOfMovies))
         # print("Predicted score : Movie Title")
-        returned_list = []
+        returnedList = []
         for entry in top_movies:
             # print(entry[0], " : ", entry[1].title)
-            returned_list.append(entry[1].title)
+            returnedList.append(entry[1].title)
 
-        return returned_list
+        return returnedList
 
     # Given a number X, returns the top X movies by average rating.
     def get_top_movies_global(self, top: int):
-        top_list = self.parser.get_top_rated_movies_global(int(top))
+        topList = self.parser.get_top_rated_movies_global(int(top))
         # print("Movie Title : Score")
-        # for entry in top_list:
-        # print(entry[0], " : ", entry[1])
-        return top_list
+        # for entry in topList:
+           # print(entry[0], " : ", entry[1])
+        return topList
 
     def get_top_x_movies_for_genre(self, genre: str, topX: int):
         topList = self.parser.get_top_movies_for_genre(genre, int(topX))
-        # print("Movie Title : Score")
-        # for entry in topList:
-        # print(entry[0], " : ", entry[1])
+        print("Movie Title : Score")
+        for entry in topList:
+            print(entry[0], " : ", entry[1])
         return topList
 
     # Adds new users to system, receives a list of movies he ranked.
@@ -74,3 +75,8 @@ class Controller:
 
     def user_exists(self, user_id):
         return user_id in self.parser.users
+
+    def checkUserInput(self, ranks: list):
+        isValidUserInput, user_ratings = self.parser.checkUserInput(ranks)
+        return (isValidUserInput, user_ratings)
+
