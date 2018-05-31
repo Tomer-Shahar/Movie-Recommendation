@@ -13,6 +13,7 @@ from Controller.Control import Controller
 
 if __name__ == "__main__":
     controller = Controller()
+
     controller.start()
     print("Starting")
     controller.create_table()
