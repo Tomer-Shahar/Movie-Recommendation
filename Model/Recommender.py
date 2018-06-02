@@ -58,6 +58,7 @@ class Parse:
         self.users[newUser.ID] = newUser
         self.__calculateSimilarities()
         self.sequentialID += 1
+        self.users[newUser.ID] = newUser
         return newUser.ID
 
     def __calculateSimilarities(self):
@@ -133,7 +134,7 @@ class Parse:
         if denominator == 0:  # in case the denominator happens to be 0, return the average rating.
             return r_a
         else:
-            return r_a + (numerator / denominator)
+            return self.rounded_score(r_a + (numerator / denominator))
 
     # Returns a DESCENDING sorted list of tuples containing the predicted score and the corresponding Movie objects.
     def get_top_x_movies_for_user(self, userId: int, top_x: int):
@@ -330,53 +331,65 @@ class Parse:
     # Performs an accuracy test with n-cross-validation
     # Note that we need to add a NEW user that has only seen the test set, and later remove him.
     def run_accuracy_test(self, n: int):
-        userCopy = self.get_random_user(minMoviesSeen=30)  # Get a user that has seen at least 50 movies.
-        self.remove_user(userCopy.ID)
+        tens_system_wins, average_rmse, strawman_average_rmse = 0, 0, 0
+        users_tested = set()  # Keep track of which users were chosen to not form duplicated
+        for i in range(0, n):
+            userCopy = self.get_new_user(users_tested)
 
-        originalSet = copy.deepcopy(userCopy.movies)
-        average_rmse = self.calc_average_rmse(n, originalSet, userCopy)
-        strawman_rmse = self.calc_strawman_rmse(originalSet)
-        self.add_old_user(userCopy)
-        self.print_results(average_rmse, n, strawman_rmse, len(originalSet))
+            trainSet, testSet = self.splitSets(userCopy.movies, 0.8)  # randomly split the set of movies
+            new_user_ID = self.add_new_user(trainSet)
+
+            rmse = self.calc_rmse(testSet, new_user_ID)
+            strawman_rmse = self.calc_strawman_rmse(testSet)
+            average_rmse += rmse
+            strawman_average_rmse += strawman_rmse
+
+            if rmse < strawman_rmse:
+                tens_system_wins += 1
+            self.remove_user(new_user_ID)
+            self.add_old_user(userCopy)
+        self.print_results(average_rmse/n, n, strawman_average_rmse/n, tens_system_wins)
 
         return average_rmse
 
-    def print_results(self, average_rmse, n, strawman_rmse, moviesSeen):
+    def calc_rmse(self, testSet, new_user_ID):
+        numerator = 0
+        for movie, real_rating in testSet:
+            prediction = self.compute_prediction_for_movie(new_user_ID, movieID=movie)
+            error = (prediction-real_rating) ** 2
+            numerator += error
+        fraction = numerator / len(testSet)
+        return math.sqrt(fraction)
+
+    @staticmethod
+    def print_results(average_rmse, n, strawman_rmse, wins):
         print("---- ACCURACY TEST PARAMETERS ----")
-        print("Number of cross-validations: " + str(n))
+        print("Number of Users Tested: " + str(n))
         print("Minimum Threshold of Movies Seen: 30")
-        print("Actual Number of Movies Seen: " + str(moviesSeen))
         print("----- ACCURACY TEST RESULTS -----")
-        print("Strawman RMSE: ", strawman_rmse)
+        print("Strawman Average RMSE: ", strawman_rmse)
         print("TENS Average RMSE: ", average_rmse)
         print("----------- Conclusion -----------")
-        if strawman_rmse > average_rmse:
-            diff = strawman_rmse - average_rmse
-            print("Success! The TENS Average RMSE is " + str(diff) + " less than the strawman RMSE")
-        else:
-            diff = average_rmse - strawman_rmse
-            print("Failure :-( The TENS Average RMSE is " + str(diff) + " more than the strawman RMSE")
+        print("TENS system was more accurate for " + str(wins) + " out of " + str(n) + " users")
         print("----------------------------------")
 
-    def calc_average_rmse(self, n, originalSet, userCopy):
-        sum_rmse = 0
-        for i in range(0, n):
-            trainSet, testSet = self.splitSets(originalSet, 0.8)  # randomly split the set of movies
-            newID = self.add_new_user(trainSet)
-            sum_rmse += self.calc_rmse(originalSet, testSet, newID)
-            self.remove_user(newID)
-        average_rmse = sum_rmse / n
-        return average_rmse
+
+    def get_new_user(self, users_tested):
+        userCopy = self.get_random_user(minMoviesSeen=30)  # Get a user that has seen at least 30 movies.
+        while userCopy.ID in users_tested:
+            userCopy = self.get_random_user(minMoviesSeen=30)  # Get a user that has seen at least 30 movies.
+
+        users_tested.add(userCopy.ID)
+        self.remove_user(userCopy.ID)  # Remove from system since the user has been chosen.
+        return userCopy
 
     def calc_strawman_rmse(self, userRatings):
         numerator = 0
         sum = 0
-        for movie, real_rating in userRatings.items():
+        for movie, real_rating in userRatings:
             sum += real_rating
-        avg_user_rating = sum/len(userRatings)
-        for movie, real_rating in userRatings.items():
+        for movie, real_rating in userRatings:
             prediction = self.movies[movie].averageRating
-            #prediction = avg_user_rating
             error = (prediction-real_rating) ** 2
             numerator += error
         fraction = numerator / len(userRatings)
@@ -385,6 +398,7 @@ class Parse:
     def get_random_user(self, minMoviesSeen):
         numOfUsers = len(self.users)
         moviesSeen = 0
+        userID = -1
         while moviesSeen < minMoviesSeen:
             userID = randint(0, numOfUsers)  # Choose random user (?)
             try:
@@ -394,7 +408,6 @@ class Parse:
         userForTest = User(userID, self.users[userID])  # copy the user
         return userForTest
 
-    # ToDo: figure out how to split the set according to i to achieve cross-validation
     def splitSets(self, userMovies, ratio):
         trainSize = int(len(userMovies) * ratio)
         keys = random.sample(userMovies.items(), trainSize)
@@ -407,15 +420,6 @@ class Parse:
         trainList = [(self.get_movie_name(movie), rating) for movie, rating in trainSet.items()]
         testList = [(movie, rating) for movie, rating in testSet.items()]
         return trainList, testList
-
-    def calc_rmse(self, originalSet, testSet, userID):
-        numerator = 0
-        for movie, real_rating in testSet:
-            prediction = self.compute_prediction_for_movie(userID, movieID=movie)
-            error = (prediction-real_rating) ** 2
-            numerator += error
-        fraction = numerator / len(testSet)
-        return math.sqrt(fraction)
 
     # Adds a user to the DB (note that this func receives an actual user OBJECT and not just ID)
     def add_old_user(self, user):
@@ -433,11 +437,30 @@ class Parse:
                 self.users[user].neighbors.remove(userID)
         self.users.pop(userID)
 
-
+    def calc_average_rmse(self, n, originalSet, userCopy):
+        sum_rmse = 0
+        trainSet, testSet = self.splitSets(originalSet, 0.8)  # randomly split the set of movies
+        newID = self.add_new_user(trainSet)
+        sum_rmse += self.calc_rmse(originalSet, testSet, newID)
+        self.remove_user(newID)
+        average_rmse = sum_rmse
+        return average_rmse
 
     """
         ---- Helpful classes ----
     """
+
+    def rounded_score(self, score: float):
+        if score > 5:
+            return 5
+        remainder = score % 1
+        score = int(score)
+        if 0.33 < remainder < 0.66:
+            score += 0.5
+        elif remainder >= 0.66:
+            score += 1
+
+        return score
 
 
 class User:

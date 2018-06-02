@@ -5,7 +5,7 @@ Authors: Nevo Itzhak, Tomer Shahar, Shani Houri, Eyal Arviv
 Version: 1.0
 
 Description: A simple collaborative filtering program for recommending movies based off of the movielens database
-of 20 million movies.
+of 100k ratings.
 
 """
 
@@ -14,7 +14,13 @@ from TestSuite import Tester
 
 if __name__ == "__main__":
     controller = Controller()
-    controller.start_no_GUI()
-    for i in range(0, 50):
+    controller.start()
+    """
+    for i in range(1, 50):
+        print("Test number " + str(i) + ":")
         controller.run_accuracy_test(100)
         print("")
+    """
+
+
+
