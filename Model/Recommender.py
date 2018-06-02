@@ -31,18 +31,20 @@ class Parse:
         self.__calculateSimilarities()
         print("Done parsing")
 
-    # Receives a list of tuples containing the movies and their ratings for a new user
+    # Receives a list of tuples containing the movie NAMES and their ratings for a new user
     # Adds the user to the system: create user, update neighbors, update average movie score
-    def add_new_user(self, newRatings: list):
-        newUser = User(self.sequentialID)
+    def add_new_user(self, newRatings: list, ID=-1):
+        if ID == -1:
+            newUser = User(self.sequentialID)
+        else:
+            newUser = User(ID)
         self.PearsonScoreDictionary[newUser.ID] = {}  # create new entry in the pearson table
         for rating in newRatings:  # < movie name (year) : rating >
             score = float(rating[1])
             movieID = self.get_movie_id(rating[0])
             movieName = rating[0].lower().split('(')[0].strip()
             newUser.movies[movieID] = score
-            self.movies[movieID].ratings[
-                self.sequentialID] = score  # add the user to the list of users that have seen the movie
+            self.movies[movieID].ratings[newUser.ID] = score  # add the user to the list of users that have seen the movie
             self.movies[movieID].calculate_average_rating()
 
         for movie_id in newUser.movies:  # iterate over movies the new user has seen
@@ -53,7 +55,7 @@ class Parse:
                 newUser.neighbors.add(user)
 
         newUser.calculate_average()
-        self.users[self.sequentialID] = newUser
+        self.users[newUser.ID] = newUser
         self.__calculateSimilarities()
         self.sequentialID += 1
         return newUser.ID
@@ -61,22 +63,25 @@ class Parse:
     def __calculateSimilarities(self):
         top = 30
         for user_a_id, user_a in self.users.items():  # Creating the actual pearson table
-            top_neighbors = []  # A list of tuples containing the 30 closest neighbors < userId , correlation >
+            top_neighbors = []  # A list of tuples that will contain the 30 closest neighbors < userId , correlation >
             if len(user_a.neighbors) == top:
                 continue
             for user_w in user_a.neighbors:
-                score = self.__calculate_score(user_a, self.users[user_w])
-                if score < 0:
-                    continue
-                if len(top_neighbors) < top:  # If there aren't X movies yet in the list, append it anyway
-                    user_correlation = (user_w, score)
-                    top_neighbors.append(user_correlation)
-                    top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
-                elif score > top_neighbors[-1][0]:  # the score is greater than at least the last user in the list.
-                    user_correlation = (user_w, score)
-                    top_neighbors.append(user_correlation)
-                    top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
-                    del top_neighbors[-1]
+             #   try:
+                    score = self.__calculate_score(user_a, self.users[user_w])
+                    if score < 0:
+                        continue
+                    if len(top_neighbors) < top:  # If there aren't X movies yet in the list, append it anyway
+                        user_correlation = (user_w, score)
+                        top_neighbors.append(user_correlation)
+                        top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
+                    elif score > top_neighbors[-1][0]:  # the score is greater than at least the last user in the list.
+                        user_correlation = (user_w, score)
+                        top_neighbors.append(user_correlation)
+                        top_neighbors.sort(key=lambda userTuple: userTuple[1], reverse=True)
+                        del top_neighbors[-1]
+              #  except KeyError:
+                  #  print("here")
 
             close_neighbors = set()
             for entry in top_neighbors:
@@ -97,14 +102,18 @@ class Parse:
 
     # receives a user ID and a movie name and returns the predicted rating of the given user for the movie.
     # the movie name can be upper/lower case.
-    def compute_prediction_for_movie(self, userId: int, movieName: str):
+    def compute_prediction_for_movie(self, userId: int, movieName: str="", movieID: int=-1):
         user = self.users[userId]
-        title = movieName.lower()
-        if title not in self.movieNames:
-            print("The movie is not in the database")
-            return
+        if movieName != "":
+            title = movieName.lower()
+            if '(' in title:
+                title = title.split('(')[0].strip()
+            if title not in self.movieNames:
+                print("The movie is not in the database")
+                return
 
-        movieID = self.movieNames[movieName.lower()]
+            movieID = self.movieNames[title]
+
         r_a = user.averageUserRating
         numerator = 0
         denominator = 0
@@ -119,7 +128,7 @@ class Parse:
                     numerator += product
                     denominator += pearson_score
                 except KeyError:
-                    print("here")
+                    pass
 
         if denominator == 0:  # in case the denominator happens to be 0, return the average rating.
             return r_a
@@ -318,39 +327,118 @@ class Parse:
                         return False, user_ratings
         return True, user_ratings
 
-    # Performs an accuracy test n times
+    # Performs an accuracy test with n-cross-validation
+    # Note that we need to add a NEW user that has only seen the test set, and later remove him.
     def run_accuracy_test(self, n: int):
+        userCopy = self.get_random_user(minMoviesSeen=30)  # Get a user that has seen at least 50 movies.
+        self.remove_user(userCopy.ID)
+
+        originalSet = copy.deepcopy(userCopy.movies)
+        average_rmse = self.calc_average_rmse(n, originalSet, userCopy)
+        strawman_rmse = self.calc_strawman_rmse(originalSet)
+        self.add_old_user(userCopy)
+        self.print_results(average_rmse, n, strawman_rmse, len(originalSet))
+
+        return average_rmse
+
+    def print_results(self, average_rmse, n, strawman_rmse, moviesSeen):
+        print("---- ACCURACY TEST PARAMETERS ----")
+        print("Number of cross-validations: " + str(n))
+        print("Minimum Threshold of Movies Seen: 30")
+        print("Actual Number of Movies Seen: " + str(moviesSeen))
+        print("----- ACCURACY TEST RESULTS -----")
+        print("Strawman RMSE: ", strawman_rmse)
+        print("TENS Average RMSE: ", average_rmse)
+        print("----------- Conclusion -----------")
+        if strawman_rmse > average_rmse:
+            diff = strawman_rmse - average_rmse
+            print("Success! The TENS Average RMSE is " + str(diff) + " less than the strawman RMSE")
+        else:
+            diff = average_rmse - strawman_rmse
+            print("Failure :-( The TENS Average RMSE is " + str(diff) + " more than the strawman RMSE")
+        print("----------------------------------")
+
+    def calc_average_rmse(self, n, originalSet, userCopy):
+        sum_rmse = 0
+        for i in range(0, n):
+            trainSet, testSet = self.splitSets(originalSet, 0.8)  # randomly split the set of movies
+            newID = self.add_new_user(trainSet)
+            sum_rmse += self.calc_rmse(originalSet, testSet, newID)
+            self.remove_user(newID)
+        average_rmse = sum_rmse / n
+        return average_rmse
+
+    def calc_strawman_rmse(self, userRatings):
+        numerator = 0
+        sum = 0
+        for movie, real_rating in userRatings.items():
+            sum += real_rating
+        avg_user_rating = sum/len(userRatings)
+        for movie, real_rating in userRatings.items():
+            prediction = self.movies[movie].averageRating
+            #prediction = avg_user_rating
+            error = (prediction-real_rating) ** 2
+            numerator += error
+        fraction = numerator / len(userRatings)
+        return math.sqrt(fraction)
+
+    def get_random_user(self, minMoviesSeen):
         numOfUsers = len(self.users)
+        moviesSeen = 0
+        while moviesSeen < minMoviesSeen:
+            userID = randint(0, numOfUsers)  # Choose random user (?)
+            try:
+                moviesSeen = len(self.users[userID].movies)
+            except KeyError:
+                pass
+        userForTest = User(userID, self.users[userID])  # copy the user
+        return userForTest
 
-        for i in range(1, n):
-            userID = randint(0, numOfUsers)  # Choose random user
-            userForTest = User(userID, self.users[userID]) #copy the user, remove and insert later.
-            trainSet, testSet = self.splitSets(userID)
-            rmse = self.calc_rmse(trainSet, testSet,userID)
+    # ToDo: figure out how to split the set according to i to achieve cross-validation
+    def splitSets(self, userMovies, ratio):
+        trainSize = int(len(userMovies) * ratio)
+        keys = random.sample(userMovies.items(), trainSize)
+        trainSet = {}
+        testSet = copy.deepcopy(userMovies)
+        for k in keys:
+            trainSet[k[0]] = k[1]
+            testSet.pop(k[0])
+        # values = [userMovies[k] for k in keys]
+        trainList = [(self.get_movie_name(movie), rating) for movie, rating in trainSet.items()]
+        testList = [(movie, rating) for movie, rating in testSet.items()]
+        return trainList, testList
 
+    def calc_rmse(self, originalSet, testSet, userID):
+        numerator = 0
+        for movie, real_rating in testSet:
+            prediction = self.compute_prediction_for_movie(userID, movieID=movie)
+            error = (prediction-real_rating) ** 2
+            numerator += error
+        fraction = numerator / len(testSet)
+        return math.sqrt(fraction)
+
+    # Adds a user to the DB (note that this func receives an actual user OBJECT and not just ID)
+    def add_old_user(self, user):
+        ratings = [(self.get_movie_name(ID), rating) for ID, rating in user.movies.items()]
+        self.add_new_user(ratings, ID=user.ID)
+
+    # Receives a user ID and removes from DB
     def remove_user(self, userID):
-        pass
+        user = self.users[userID]
+        self.PearsonScoreDictionary[userID] = None  # remove from pearson score dictionary
+        for movie, rating in user.movies.items():
+            self.movies[movie].ratings.pop(userID)  # Remove this user from the users that have seen each movie
+        for user in self.users:
+            if userID in self.users[user].neighbors:
+                self.users[user].neighbors.remove(userID)
+        self.users.pop(userID)
 
-    def splitSets(self, userID):
-        userMovies = self.users[userID].movies
-        random.shuffle(userMovies)
-        trainSize = len(userMovies) * 0.8
-        trainSet = userMovies[:trainSize]
-        testSet = userMovies[trainSize:]
-        return trainSet, testSet
 
-    def add_old_user(self, userID):
-        pass
-
-    def calc_rmse(self, trainSet, testSet, userId):
-        movieName = ""
-        score = self.compute_prediction_for_movie(userId, movieName)
-        return score
-        pass
 
     """
         ---- Helpful classes ----
     """
+
 
 class User:
 
@@ -360,7 +448,7 @@ class User:
             self.movies = {}  # A dictionary of movies seen by the user and their ratings.
             self.neighbors = set()  # A dictionary containing a user and a set of neighbours (BY ID!!!)
             self.averageUserRating = -1  # The users average rating.
-        else: # copy constructor
+        else:  # copy constructor
             self.ID = orig.ID
             self.movies = copy.deepcopy(orig.movies)
             self.neighbors = copy.deepcopy(orig.neighbors)
@@ -374,8 +462,6 @@ class User:
             i += 1
 
         self.averageUserRating = rating_sum / i
-
-    def __init__(self, other: User):
 
 
 class Movie:

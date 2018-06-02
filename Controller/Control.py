@@ -19,14 +19,12 @@ class Controller:
     def start(self):
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
-        self.parser = Parse(database_folder)
         self.load_table()
         self.gui.showMainWindow()
 
     def start_no_GUI(self):
         cwd = os.getcwd()  # current working directory
         database_folder = cwd + '\\Database\\100k-small'
-        self.parser = Parse(database_folder)
         self.load_table()
 
     def create_table(self):

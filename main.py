@@ -10,10 +10,11 @@ of 20 million movies.
 """
 
 from Controller.Control import Controller
+from TestSuite import Tester
 
 if __name__ == "__main__":
     controller = Controller()
-
-    controller.start()
-    print("Starting")
-    controller.create_table()
+    controller.start_no_GUI()
+    for i in range(0, 50):
+        controller.run_accuracy_test(100)
+        print("")
